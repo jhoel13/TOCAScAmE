@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="TOCAScAmE - Análisis matricial de armaduras 2D" />
+  <title>TOCAScAmE | Cálculo Matricial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <section id="authView" class="auth-view">
+    <div class="auth-brand"><div class="logo-mark">T</div><div><h1>TOCAS<span>cAmE</span></h1><p>Análisis matricial de estructuras · Universidad Nacional de Cajamarca</p></div></div>
+    <div class="auth-card glass">
+      <div class="auth-tabs"><button class="active" data-auth-tab="login">Ingresar</button><button data-auth-tab="register">Registrarse</button></div>
+      <form id="loginForm" class="auth-form"><label>Correo electrónico<input id="loginEmail" type="email" placeholder="jhoel@unc.edu.pe" required></label><label>Contraseña<input id="loginPassword" type="password" minlength="4" required></label><button class="btn primary" type="submit">Entrar a TOCAScAmE</button></form>
+      <form id="registerForm" class="auth-form hidden"><label>Nombre<input id="registerName" type="text" placeholder="Jhoel Tocas" required></label><label>Correo electrónico<input id="registerEmail" type="email" required></label><label>Contraseña<input id="registerPassword" type="password" minlength="4" required></label><button class="btn primary" type="submit">Crear cuenta local</button></form>
+      <p class="auth-note">Modo académico: la cuenta se guarda localmente en este navegador. Para publicación real conviene conectar Firebase, Supabase o un backend propio.</p>
+    </div>
+  </section>
+
+  <div id="appView" class="app-shell hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-row"><div class="logo-mark small">T</div><div><strong>TOCAS<span>cAmE</span></strong><small>Matrix Engine 2D</small></div></div>
+      <nav><button class="nav-item active" data-view="workspace">⌁ <span>Análisis</span></button><button class="nav-item" data-view="theory">▤ <span>Teoría</span></button><button class="nav-item" data-view="reports">⇩ <span>Reportes</span></button><button class="nav-item" data-view="about">ⓘ <span>Acerca de</span></button></nav>
+      <div class="sidebar-bottom"><button id="themeToggle" class="nav-item">◐ <span>Modo claro/oscuro</span></button><button id="logoutBtn" class="nav-item danger">↪ <span>Cerrar sesión</span></button></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar"><button id="menuBtn" class="icon-btn mobile-only">☰</button><div><h2 id="viewTitle">Análisis matricial de armaduras 2D</h2><p id="statusText">Motor de rigidez directa listo</p></div><div class="top-actions"><button id="loadExample1" class="btn ghost">Example 1</button><button id="loadExample2" class="btn ghost">Example 2</button><button id="solveBtn" class="btn primary">Calcular estructura</button></div></header>
+      <section id="workspace" class="view active-view">
+        <div class="stats-grid"><article class="stat"><span>Nodos</span><strong id="statNodes">0</strong></article><article class="stat"><span>Barras</span><strong id="statBars">0</strong></article><article class="stat"><span>GDL totales</span><strong id="statDofs">0</strong></article><article class="stat"><span>Máx. |u|</span><strong id="statDisp">—</strong></article></div>
+        <div class="layout-2">
+          <section class="panel input-panel"><div class="panel-head"><div><h3>Modelo estructural</h3><p>Edita propiedades, nodos, barras, cargas y restricciones.</p></div><button id="resetBtn" class="btn subtle">Limpiar</button></div><div class="form-grid compact"><label>Unidad longitud<input id="lengthUnit" value="cm"></label><label>Unidad fuerza<input id="forceUnit" value="kgf"></label><label>Escala deformada<input id="deformScale" type="number" value="500" min="0.01" step="10"></label></div>
+            <details open><summary>Nodos y coordenadas</summary><div class="table-wrap"><table><thead><tr><th>Nodo</th><th>X</th><th>Y</th><th></th></tr></thead><tbody id="nodesBody"></tbody></table></div><button class="mini-add" data-add="node">+ Nodo</button></details>
+            <details><summary>Barras / elementos</summary><div class="table-wrap"><table><thead><tr><th>#</th><th>i</th><th>j</th><th>A</th><th>E</th><th></th></tr></thead><tbody id="barsBody"></tbody></table></div><button class="mini-add" data-add="bar">+ Barra</button></details>
+            <details><summary>Cargas nodales</summary><div class="table-wrap"><table><thead><tr><th>Nodo</th><th>Fx</th><th>Fy</th><th></th></tr></thead><tbody id="loadsBody"></tbody></table></div><button class="mini-add" data-add="load">+ Carga</button></details>
+            <details><summary>Restricciones / apoyos</summary><div class="table-wrap"><table><thead><tr><th>Nodo</th><th>Ux</th><th>Uy</th><th></th></tr></thead><tbody id="supportsBody"></tbody></table></div><button class="mini-add" data-add="support">+ Apoyo</button></details>
+          </section>
+          <section class="panel canvas-panel"><div class="panel-head"><div><h3>Vista de la armadura</h3><p>Original, cargas, apoyos y deformada.</p></div><div class="legend"><span class="dot original"></span>Original <span class="dot tension"></span>Tracción <span class="dot compression"></span>Compresión</div></div><canvas id="trussCanvas" width="1000" height="650"></canvas><div class="canvas-controls"><label><input id="showLabels" type="checkbox" checked> Nodos</label><label><input id="showLoads" type="checkbox" checked> Cargas</label><label><input id="showDeformed" type="checkbox" checked> Deformada</label><button id="fitBtn" class="btn subtle">Ajustar vista</button></div></section>
+        </div>
+        <section id="resultsPanel" class="panel results-panel"><div class="panel-head"><div><h3>Procedimiento y resultados</h3><p>Secuencia completa del método matricial de rigidez.</p></div><div><button id="exportPdfTop" class="btn ghost">PDF</button> <button id="exportExcelTop" class="btn ghost">Excel</button></div></div><div id="resultTabs" class="result-tabs"></div><div id="resultContent" class="result-content empty-state">Carga un ejemplo o define tu estructura y pulsa <strong>Calcular estructura</strong>.</div></section>
+      </section>
+      <section id="theory" class="view"><div class="theory-hero panel"><span class="eyebrow">BIBLIOTECA TOCAScAmE</span><h2>Método matricial de rigidez para armaduras planas</h2><p>Resumen académico integrado para entender qué calcula el programa y cómo interpretar cada matriz.</p></div><div class="theory-grid" id="theoryGrid"></div></section>
+      <section id="reports" class="view"><div class="panel report-center"><h2>Centro de reportes</h2><p>Genera entregables ordenados a partir del último análisis realizado.</p><div class="report-actions"><button id="exportPdfBtn" class="btn primary big">Descargar informe PDF</button><button id="exportExcelBtn" class="btn ghost big">Descargar libro Excel</button><button id="exportJsonBtn" class="btn ghost big">Guardar modelo JSON</button><label class="btn ghost big file-label">Importar modelo JSON<input id="importJson" type="file" accept="application/json"></label></div><div class="report-note">El PDF incluye datos del modelo, desplazamientos, reacciones y resultados por barra. Excel separa el contenido en hojas para revisión y entrega.</div></div></section>
+      <section id="about" class="view"><div class="panel about-card"><div class="logo-mark large">T</div><h2>TOCAScAmE</h2><p>Aplicación académica de cálculo matricial desarrollada para análisis de armaduras 2D mediante el método de rigidez directa.</p><div class="about-meta"><span>Autor</span><strong>Jhoel Tocas Cercado</strong><span>Institución</span><strong>Universidad Nacional de Cajamarca</strong><span>Arquitectura</span><strong>HTML + CSS + JavaScript</strong></div></div></section>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+</body>
+</html>
