@@ -1,68 +1,97 @@
-# TOCAScAmE
+# TOCAS Matriz
 
-Aplicación web para el análisis matricial de armaduras planas 2D, desarrollada para visualizar cada etapa del método de rigidez y permitir el cálculo de modelos personalizados.
+Aplicación web profesional para el análisis matricial de armaduras planas 2D mediante el método directo de rigidez.
 
-## Demo
+**Aplicación en línea:** [tocas-matriz.jtocasc24-1.chatgpt.site](https://tocas-matriz.jtocasc24-1.chatgpt.site)
 
-[Usar TOCAScAmE en línea](https://tocascame-armaduras.jtocasc24-1.chatgpt.site)
+## Qué incluye
 
-## Funcionalidades
+- Nodos editables por tabla o mediante clic sobre el plano cartesiano con SNAP.
+- Barras con área, módulo de elasticidad y material independientes.
+- Conversión automática entre mm, cm, m, N, kN, kgf, tf, Pa, kPa, MPa, GPa, kgf/cm² y kN/cm².
+- Importación de nodos desde Excel, CSV, TSV o datos pegados.
+- Validación de nodos inexistentes, longitudes cero, conexiones duplicadas, A/E no positivos y sistemas singulares.
+- Vista SVG interactiva con zoom, pan, apoyos, cargas, ejes locales, longitudes, ángulos y deformada.
+- Matrices de transformación, locales y globales de cada elemento.
+- Numeración de GDL, restricciones, vector global de cargas y ensamblaje paso a paso.
+- Matriz global completa y particiones Kff, Kfr, Krf y Krr.
+- Desplazamientos, reacciones, deformaciones, esfuerzos y fuerzas axiales.
+- Clasificación de barras en tracción, compresión o fuerza nula.
+- Comprobación global de fuerzas y momentos.
+- Exportación de informe técnico PDF, libro Excel y proyecto JSON.
+- Dos ejemplos resueltos y biblioteca editable de materiales.
+- Modo claro/oscuro y diseño adaptable para laptop, tableta y móvil.
+- Inicio de sesión con ChatGPT y guardado persistente de proyectos por usuario.
+- Sección teórica con formulación y fuentes académicas.
 
-- Edición de nodos, coordenadas, barras, área transversal, módulo de elasticidad, cargas y restricciones.
-- Visualización interactiva de la armadura original y su deformada.
-- Matrices de rigidez local y global de cada elemento.
-- Grados de libertad por barra y grados de libertad restringidos.
-- Ensamblaje de la matriz de rigidez global del sistema.
-- Vector de fuerzas aplicadas y correspondencia con sus GDL.
-- Matriz reducida de los grados de libertad libres.
-- Cálculo de desplazamientos nodales y reacciones.
-- Deformación unitaria, esfuerzo y fuerza normal por barra.
-- Clasificación gráfica de barras en tracción, compresión o estado neutro.
-- Exportación ordenada del informe a PDF y de los resultados a Excel.
-- Modo claro y oscuro.
-- Registro, ingreso y guardado local de proyectos en el navegador.
-- Sección de teoría del método matricial.
+## Motor de cálculo
 
-## Ejemplos incluidos
+El motor convierte todos los datos a SI y resuelve una armadura 2D lineal elástica. Para cada barra calcula:
 
-- **Ejemplo 1:** armadura simétrica de 6 nodos y 9 barras, reproducida desde el primer notebook guía.
-- **Ejemplo 2:** armadura compuesta de 28 nodos y 58 barras, reproducida desde el segundo notebook guía.
-- **Nuevo modelo:** plantilla editable para analizar otras estructuras.
+```text
+L = √(Δx² + Δy²)
+c = Δx/L
+s = Δy/L
+k' = (AE/L) [ 1  -1 ; -1  1 ]
+kᵉ = Tᵀ k' T
+```
 
-## Modelo de cálculo
+Después ensambla `K`, separa grados libres y restringidos, resuelve `Kff Uf = Ff` mediante eliminación gaussiana con pivoteo parcial y recupera:
 
-El motor considera armaduras planas con dos grados de libertad traslacionales por nodo, barras articuladas, comportamiento elástico lineal, deformaciones pequeñas y carga axial. La coherencia de unidades es responsabilidad del usuario: las coordenadas, el área, el módulo de elasticidad y las fuerzas deben pertenecer a un mismo sistema.
+```text
+R = KU - F
+δ = [-c -s c s] uᵉ
+ε = δ/L
+σ = Eε
+N = Aσ
+```
+
+Convención de signos: `N > 0` corresponde a tracción y `N < 0` a compresión.
 
 ## Tecnologías
 
-React 19, TypeScript, CSS, Vite/Vinext, jsPDF, AutoTable y SheetJS.
+- React 19, TypeScript y CSS.
+- Vinext/Vite sobre Cloudflare Workers.
+- Cloudflare D1 y Drizzle ORM para proyectos guardados.
+- jsPDF + AutoTable para PDF.
+- SheetJS para Excel.
+- SVG nativo para la visualización estructural.
 
-## Ejecución local
+## Ejecutar localmente
 
 Requisitos: Node.js 22.13 o superior.
 
-1. Clona el repositorio.
-2. Ejecuta `npm install`.
-3. Inicia el entorno con `npm run dev`.
-4. Abre la dirección local indicada en la terminal.
+```bash
+npm install
+npm run dev
+```
 
-Comandos de verificación:
+Verificación completa:
 
-- `npm run lint`
-- `npm run build`
-- `npm test`
+```bash
+npm run lint
+npx tsc --noEmit
+npm test
+```
 
-## Estructura principal
+## Archivos principales
 
-- `app/truss-engine.ts`: motor de análisis matricial.
-- `app/truss-examples.ts`: modelos de los dos notebooks y plantilla editable.
-- `app/truss-app.tsx`: interfaz, tablas, gráficos y exportaciones.
-- `app/globals.css`: diseño adaptable, modo claro y oscuro.
-- `tests/`: pruebas del artefacto compilado.
+- `lib/truss.ts`: motor numérico, unidades, validaciones y ejemplos.
+- `components/TrussApp.tsx`: flujo de modelado, tablas, resultados y teoría.
+- `components/TrussCanvas.tsx`: plano SVG interactivo y deformada.
+- `lib/exporters.ts`: generación de PDF, Excel y JSON.
+- `app/api/projects/route.ts`: guardado seguro por usuario.
+- `db/schema.ts`: esquema de proyectos persistentes.
+- `tests/truss.test.ts`: comprobaciones numéricas y de estabilidad.
+
+## Alcance técnico
+
+La aplicación supone barras rectas, uniones articuladas, pequeñas deformaciones, material elástico lineal, propiedades constantes por elemento y cargas aplicadas en nodos. No verifica pandeo, fluencia, conexiones, segundo orden, dinámica ni requisitos normativos.
 
 ## Autor
 
 **Jhoel Tocas Cercado**  
-Universidad Nacional de Cajamarca
+Ingeniería Hidráulica — Universidad Nacional de Cajamarca
 
-> Herramienta académica y didáctica. Para decisiones de diseño estructural real, los resultados deben ser revisados por un profesional competente.
+Herramienta académica y didáctica. Un diseño estructural real debe ser revisado por un profesional competente.
+
